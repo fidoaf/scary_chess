@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Minecraft Chess</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Scary Chess</h1>
+        <div class="game-info">
+            <div id="turn-indicator">White's Turn</div>
+            <div id="status"></div>
+        </div>
+        <div class="board-wrapper">
+            <div class="rank-labels">
+                <span>8</span><span>7</span><span>6</span><span>5</span>
+                <span>4</span><span>3</span><span>2</span><span>1</span>
+            </div>
+            <div>
+                <div id="board" class="board"></div>
+                <div class="file-labels">
+                    <span>a</span><span>b</span><span>c</span><span>d</span>
+                    <span>e</span><span>f</span><span>g</span><span>h</span>
+                </div>
+            </div>
+        </div>
+        <div class="captured">
+            <div class="captured-group">
+                <span class="captured-label">Captured by White:</span>
+                <div id="captured-white" class="captured-pieces"></div>
+            </div>
+            <div class="captured-group">
+                <span class="captured-label">Captured by Black:</span>
+                <div id="captured-black" class="captured-pieces"></div>
+            </div>
+        </div>
+        <div class="controls">
+            <button id="new-game-btn">New Game</button>
+            <button id="undo-btn">Undo</button>
+        </div>
+    </div>
+
+    <div id="promotion-modal" class="modal hidden">
+        <div class="modal-content">
+            <h2>Promote Pawn</h2>
+            <div id="promotion-choices" class="promotion-choices"></div>
+        </div>
+    </div>
+
+    <script src="chess.js"></script>
+</body>
+</html>

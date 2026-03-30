@@ -40,7 +40,22 @@
         <div class="controls">
             <button id="new-game-btn">New Game</button>
             <button id="undo-btn">Undo</button>
-            <button id="together-btn" onclick="TogetherJS(this); return false;">Play Together</button>
+            <button id="play-together-btn">Play Together</button>
+        </div>
+    </div>
+
+    <div id="connection-status" class="connection-status hidden"></div>
+
+    <div id="share-modal" class="modal hidden">
+        <div class="modal-content">
+            <h2>Play Together</h2>
+            <p>Share this link with your opponent:</p>
+            <div id="share-link-display"></div>
+            <div class="share-actions">
+                <button id="copy-link-btn">Copy Link</button>
+                <button id="close-share-modal-btn">Close</button>
+            </div>
+            <div id="waiting-msg">Waiting for opponent to join...</div>
         </div>
     </div>
 
@@ -51,7 +66,7 @@
         </div>
     </div>
 
-    <script src="https://togetherjs.com/togetherjs-min.js"></script>
+    <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
     <script src="chess.js"></script>
 </body>
 </html>

@@ -283,8 +283,8 @@
         gameOver = false;
         render();
         updateStatus();
-        if (!isRemoteAction && typeof TogetherJS !== 'undefined' && TogetherJS.running) {
-            TogetherJS.send({ type: 'chess-newgame' });
+        if (!isRemoteAction) {
+            sendToPeer({ type: 'chess-newgame' });
         }
     }
 
@@ -608,8 +608,8 @@
 
         render();
         updateStatus();
-        if (!isRemoteAction && typeof TogetherJS !== 'undefined' && TogetherJS.running) {
-            TogetherJS.send({ type: 'chess-move', move: move });
+        if (!isRemoteAction) {
+            sendToPeer({ type: 'chess-move', move: move });
         }
     }
 
@@ -629,8 +629,8 @@
         gameOver = false;
         render();
         updateStatus();
-        if (!isRemoteAction && typeof TogetherJS !== 'undefined' && TogetherJS.running) {
-            TogetherJS.send({ type: 'chess-undo' });
+        if (!isRemoteAction) {
+            sendToPeer({ type: 'chess-undo' });
         }
     }
 
@@ -841,78 +841,152 @@
         modal.classList.remove('hidden');
     }
 
-    // ---- TogetherJS Integration ----
+    // ---- PeerJS Multiplayer ----
 
-    function broadcastState() {
-        if (typeof TogetherJS !== 'undefined' && TogetherJS.running) {
-            TogetherJS.send({
-                type: 'chess-state',
-                board: board,
-                turn: turn,
-                castlingRights: castlingRights,
-                enPassantTarget: enPassantTarget,
-                halfMoveClock: halfMoveClock,
-                lastMove: lastMove,
-                capturedByWhite: capturedByWhite,
-                capturedByBlack: capturedByBlack,
-                gameOver: gameOver,
-                moveHistory: moveHistory,
-            });
+    let peer = null;
+    let conn = null;
+
+    function sendToPeer(data) {
+        if (conn && conn.open) {
+            conn.send(data);
         }
     }
 
-    if (typeof TogetherJS !== 'undefined') {
-        TogetherJS.hub.on('chess-move', function (msg) {
-            if (!msg.sameUrl) return;
-            isRemoteAction = true;
-            executeMove(msg.move);
-            isRemoteAction = false;
+    function sendState() {
+        sendToPeer({
+            type: 'chess-state',
+            board: board,
+            turn: turn,
+            castlingRights: castlingRights,
+            enPassantTarget: enPassantTarget,
+            halfMoveClock: halfMoveClock,
+            lastMove: lastMove,
+            capturedByWhite: capturedByWhite,
+            capturedByBlack: capturedByBlack,
+            gameOver: gameOver,
+            moveHistory: moveHistory,
         });
+    }
 
-        TogetherJS.hub.on('chess-undo', function (msg) {
-            if (!msg.sameUrl) return;
-            isRemoteAction = true;
-            undoMove();
-            isRemoteAction = false;
-        });
+    function applyRemoteState(msg) {
+        board = msg.board;
+        turn = msg.turn;
+        castlingRights = msg.castlingRights;
+        enPassantTarget = msg.enPassantTarget;
+        halfMoveClock = msg.halfMoveClock;
+        lastMove = msg.lastMove;
+        capturedByWhite = msg.capturedByWhite;
+        capturedByBlack = msg.capturedByBlack;
+        gameOver = msg.gameOver;
+        moveHistory = msg.moveHistory;
+        selectedSquare = null;
+        legalMovesForSelected = [];
+        render();
+        updateStatus();
+    }
 
-        TogetherJS.hub.on('chess-newgame', function (msg) {
-            if (!msg.sameUrl) return;
-            isRemoteAction = true;
-            initGame();
-            isRemoteAction = false;
-        });
+    function handlePeerData(msg) {
+        isRemoteAction = true;
+        switch (msg.type) {
+            case 'chess-move':     executeMove(msg.move); break;
+            case 'chess-undo':     undoMove();            break;
+            case 'chess-newgame':  initGame();            break;
+            case 'chess-state':    applyRemoteState(msg); break;
+        }
+        isRemoteAction = false;
+    }
 
-        TogetherJS.hub.on('chess-state', function (msg) {
-            if (!msg.sameUrl) return;
-            board = msg.board;
-            turn = msg.turn;
-            castlingRights = msg.castlingRights;
-            enPassantTarget = msg.enPassantTarget;
-            halfMoveClock = msg.halfMoveClock;
-            lastMove = msg.lastMove;
-            capturedByWhite = msg.capturedByWhite;
-            capturedByBlack = msg.capturedByBlack;
-            gameOver = msg.gameOver;
-            moveHistory = msg.moveHistory;
-            selectedSquare = null;
-            legalMovesForSelected = [];
-            render();
-            updateStatus();
+    function setupConn(c) {
+        c.on('open', function () {
+            setConnectionStatus('connected');
         });
+        c.on('data', handlePeerData);
+        c.on('close', function () {
+            conn = null;
+            setConnectionStatus('disconnected');
+        });
+        c.on('error', function () {
+            setConnectionStatus('error');
+        });
+    }
 
-        // Send current game state to any new peer that joins
-        TogetherJS.hub.on('togetherjs.hello', function (msg) {
-            if (msg.sameUrl) {
-                broadcastState();
-            }
+    function hostGame() {
+        if (peer) { peer.destroy(); peer = null; }
+        peer = new Peer();
+        peer.on('open', function (id) {
+            const base = window.location.href.split('?')[0];
+            const shareUrl = base + '?join=' + encodeURIComponent(id);
+            document.getElementById('share-link-display').textContent = shareUrl;
+            document.getElementById('share-modal').classList.remove('hidden');
+            setConnectionStatus('hosting');
         });
+        peer.on('connection', function (c) {
+            if (conn) conn.close();
+            conn = c;
+            setupConn(c);
+            document.getElementById('share-modal').classList.add('hidden');
+            // Send current board state to the joiner
+            c.on('open', function () { sendState(); });
+        });
+        peer.on('error', function (err) {
+            setConnectionStatus('error');
+            alert('PeerJS error: ' + err.type);
+        });
+    }
+
+    function joinGame(hostId) {
+        if (peer) { peer.destroy(); peer = null; }
+        setConnectionStatus('connecting');
+        peer = new Peer();
+        peer.on('open', function () {
+            conn = peer.connect(hostId);
+            setupConn(conn);
+        });
+        peer.on('error', function () {
+            setConnectionStatus('error');
+            alert('Could not connect to host. Make sure the link is correct and the host is still online.');
+        });
+    }
+
+    function setConnectionStatus(status) {
+        const el = document.getElementById('connection-status');
+        const labels = {
+            hosting:      'Hosting \u2014 waiting for opponent\u2026',
+            connecting:   'Connecting\u2026',
+            connected:    'Opponent connected',
+            disconnected: 'Opponent disconnected',
+            error:        'Connection error',
+        };
+        el.textContent = labels[status] || '';
+        el.className = 'connection-status connection-' + status;
+        el.classList.remove('hidden');
+    }
+
+    function initMultiplayer() {
+        const params = new URLSearchParams(window.location.search);
+        const joinId = params.get('join');
+        if (joinId) {
+            joinGame(decodeURIComponent(joinId));
+        }
     }
 
     // ---- Event Listeners ----
 
     document.getElementById('new-game-btn').addEventListener('click', initGame);
     document.getElementById('undo-btn').addEventListener('click', undoMove);
+    document.getElementById('play-together-btn').addEventListener('click', hostGame);
+    document.getElementById('copy-link-btn').addEventListener('click', function () {
+        const text = document.getElementById('share-link-display').textContent;
+        navigator.clipboard.writeText(text).then(function () {
+            document.getElementById('copy-link-btn').textContent = 'Copied!';
+            setTimeout(function () {
+                document.getElementById('copy-link-btn').textContent = 'Copy Link';
+            }, 1500);
+        });
+    });
+    document.getElementById('close-share-modal-btn').addEventListener('click', function () {
+        document.getElementById('share-modal').classList.add('hidden');
+    });
 
     // Keyboard support
     document.addEventListener('keydown', (e) => {
@@ -924,4 +998,5 @@
 
     // Start
     initGame();
+    initMultiplayer();
 })();

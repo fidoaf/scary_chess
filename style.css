@@ -179,6 +179,12 @@ h1 {
     pointer-events: none;
 }
 
+body[data-theme="classic-chess"] .piece-img,
+body[data-theme="classic-chess"] .captured-img,
+body[data-theme="classic-chess"] .turn-pawn-icon {
+    image-rendering: auto;
+}
+
 .square.light {
     background-color: var(--square-light);
 }

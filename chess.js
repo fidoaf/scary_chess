@@ -229,36 +229,139 @@
     }
 
     function generateClassicSprites() {
-        const SPRITE_SIZE = 48;
-        const symbols = {
-            [W_PAWN]: '\u265F', [W_KNIGHT]: '\u265E', [W_BISHOP]: '\u265D', [W_ROOK]: '\u265C', [W_QUEEN]: '\u265B', [W_KING]: '\u265A',
-            [B_PAWN]: '\u265F', [B_KNIGHT]: '\u265E', [B_BISHOP]: '\u265D', [B_ROOK]: '\u265C', [B_QUEEN]: '\u265B', [B_KING]: '\u265A',
+        const sprites = {};
+        const pieceKinds = {
+            [W_PAWN]: 'pawn', [W_KNIGHT]: 'knight', [W_BISHOP]: 'bishop', [W_ROOK]: 'rook', [W_QUEEN]: 'queen', [W_KING]: 'king',
+            [B_PAWN]: 'pawn', [B_KNIGHT]: 'knight', [B_BISHOP]: 'bishop', [B_ROOK]: 'rook', [B_QUEEN]: 'queen', [B_KING]: 'king',
         };
 
-        const sprites = {};
+        function createClassicSprite(pieceKind, isWhite) {
+            const fill = isWhite ? '#f6f2e8' : '#111111';
+            const stroke = isWhite ? '#202020' : '#e7dfd0';
+            const accent = isWhite ? '#d7c6a4' : '#2d2d2d';
+
+            // Bishop: clean symmetric Staunton silhouette
+            if (pieceKind === 'bishop') {
+                const detail = isWhite ? '#202020' : '#e7dfd0';
+                const baseFill = isWhite ? '#e2d9c4' : '#282828';
+                const svg =
+                    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 45 45">' +
+                    '<g stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5">' +
+                    // base step 2 (widest)
+                    '<rect x="8" y="41" width="29" height="3.5" rx="1.5"' +
+                    ' fill="' + baseFill + '" stroke="' + stroke + '"/>' +
+                    // base step 1
+                    '<rect x="11" y="38" width="23" height="3" rx="1"' +
+                    ' fill="' + baseFill + '" stroke="' + stroke + '"/>' +
+                    // lower skirt: arch from base up to bottom of oval body
+                    '<path d="M11,38 C11,35 14.5,33.5 22.5,33.5 C30.5,33.5 34,35 34,38 Z"' +
+                    ' fill="' + fill + '" stroke="' + stroke + '"/>' +
+                    // main body: tall symmetric oval (the mitre)
+                    '<path d="M22.5,9' +
+                    ' C17,9 13,15 13,22.5' +
+                    ' C13,29 17,33.5 22.5,33.5' +
+                    ' C28,33.5 32,29 32,22.5' +
+                    ' C32,15 28,9 22.5,9 Z"' +
+                    ' fill="' + fill + '" stroke="' + stroke + '"/>' +
+                    // characteristic horizontal slash
+                    '<path d="M14.5,27 L30.5,27"' +
+                    ' fill="none" stroke="' + detail + '" stroke-width="1.2"/>' +
+                    // ball on tip
+                    '<circle cx="22.5" cy="7" r="2.5"' +
+                    ' fill="' + fill + '" stroke="' + stroke + '"/>' +
+                    '</g>' +
+                    '</svg>';
+                return 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(svg);
+            }
+
+            // Knight: use actual traced Staunton silhouette paths (Cburnett/Wikipedia chess set)
+            if (pieceKind === 'knight') {
+                const detail = isWhite ? '#202020' : '#e7dfd0';
+                const baseFill = isWhite ? '#e2d9c4' : '#282828';
+                const svg =
+                    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 45 45">' +
+                    '<g transform="translate(0,0.3)" stroke-linecap="round" stroke-linejoin="round" stroke-miterlimit="4">' +
+                    '<path d="M22,10 C32.5,11 38.5,18 38,39 L15,39 C15,30 25,32.5 23,18"' +
+                    ' fill="' + fill + '" stroke="' + stroke + '" stroke-width="1.5"/>' +
+                    '<path d="M24,18 C24.38,20.91 18.45,25.37 16,27 C13,29 13.18,31.34 11,31' +
+                    ' C9.958,30.06 12.41,27.96 11,28 C10,28 11.19,29.23 10,30 C9,30 5.997,31 6,26' +
+                    ' C6,24 12,14 12,14 C12,14 13.89,12.1 14,10.5 C13.27,9.506 13.5,8.5 13.5,7.5' +
+                    ' C14.5,6.5 16.5,10 16.5,10 L18.5,10 C18.5,10 19.28,8.008 21,7 C22,7 22,10 22,10"' +
+                    ' fill="' + fill + '" stroke="' + stroke + '" stroke-width="1.5"/>' +
+                    '<path d="M9.5,25.5 A0.5,0.5 0 1 1 8.5,25.5 A0.5,0.5 0 1 1 9.5,25.5 z"' +
+                    ' fill="' + detail + '" stroke="none"/>' +
+                    '<path d="M15,15.5 A0.5,1.5 0 1 1 14,15.5 A0.5,1.5 0 1 1 15,15.5 z"' +
+                    ' fill="' + detail + '" stroke="none" transform="matrix(0.866,0.5,-0.5,0.866,9.693,-5.173)"/>' +
+                    '<path d="M24.55,10.4 L24.1,11.85 L24.6,12 C27.75,13 30.25,14.49 32.5,18.75' +
+                    ' C34.75,23.01 35.75,29.06 35.25,39 L35.2,39.5 L37.45,39.5 L37.5,39' +
+                    ' C38,28.94 36.62,22.15 34.25,17.62 C31.88,13.09 28.46,11.02 25.06,10.5 Z"' +
+                    ' fill="' + detail + '" stroke="none"/>' +
+                    '</g>' +
+                    '<polygon points="12,39.3 12,42.3 35.5,42.3 35.5,39.3"' +
+                    ' fill="' + baseFill + '" stroke="' + stroke + '" stroke-width="1.5"/>' +
+                    '<polygon points="10,42.3 10,44.8 13,44.8 14,44.3 36,44.3 37,44.8 40,44.8 40,42.3"' +
+                    ' fill="' + baseFill + '" stroke="' + stroke + '" stroke-width="1.5"/>' +
+                    '</svg>';
+                return 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(svg);
+            }
+
+            const shapesByPiece = {
+                pawn: [
+                    '<circle cx="32" cy="17" r="7" />',
+                    '<path d="M24 31c0-5 3-9 8-9s8 4 8 9c0 2-1 4-2 6l4 6H22l4-6c-1-2-2-4-2-6Z" />',
+                    '<rect x="22" y="43" width="20" height="5" rx="2" />',
+                    '<rect x="18" y="49" width="28" height="5" rx="2" />'
+                ],
+                rook: [
+                    '<rect x="18" y="12" width="7" height="8" rx="1" />',
+                    '<rect x="28.5" y="12" width="7" height="8" rx="1" />',
+                    '<rect x="39" y="12" width="7" height="8" rx="1" />',
+                    '<rect x="18" y="20" width="28" height="22" rx="2" />',
+                    '<rect x="21" y="24" width="22" height="14" rx="1" fill="none" />',
+                    '<rect x="16" y="43" width="32" height="5" rx="2" />',
+                    '<rect x="12" y="49" width="40" height="5" rx="2" />'
+                ],
+                queen: [
+                    '<circle cx="18" cy="16" r="3.5" />',
+                    '<circle cx="28" cy="12" r="3.5" />',
+                    '<circle cx="36" cy="12" r="3.5" />',
+                    '<circle cx="46" cy="16" r="3.5" />',
+                    '<path d="M18 19l6 11 8-15 8 15 6-11 3 23H15l3-23Z" />',
+                    '<rect x="20" y="42" width="24" height="5" rx="2" />',
+                    '<rect x="15" y="49" width="34" height="5" rx="2" />'
+                ],
+                king: [
+                    '<path d="M32 9v12" fill="none" />',
+                    '<path d="M27 14h10" fill="none" />',
+                    '<path d="M24 22h16l-2 7 5 13H21l5-13-2-7Z" />',
+                    '<rect x="21" y="42" width="22" height="5" rx="2" />',
+                    '<rect x="16" y="49" width="32" height="5" rx="2" />'
+                ],
+            };
+
+            const accentShape = pieceKind === 'queen' || pieceKind === 'king'
+                ? '<path d="M21 42h22" fill="none" stroke="' + accent + '" stroke-width="1.5" />'
+                : '<path d="M22 43h20" fill="none" stroke="' + accent + '" stroke-width="1.5" />';
+            const kingCrossShape = pieceKind === 'king'
+                ? '<g fill="none" stroke="' + (isWhite ? stroke : '#111111') + '" stroke-width="2.5" stroke-linecap="round"><path d="M32 9v12" /><path d="M27 14h10" /></g>'
+                : '';
+
+            const svg = [
+                '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">',
+                '<g fill="' + fill + '" stroke="' + stroke + '" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">',
+                ...shapesByPiece[pieceKind],
+                '</g>',
+                kingCrossShape,
+                accentShape,
+                '</svg>'
+            ].join('');
+
+            return 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(svg);
+        }
+
         for (let piece = W_PAWN; piece <= B_KING; piece++) {
-            const canvas = document.createElement('canvas');
-            canvas.width = SPRITE_SIZE;
-            canvas.height = SPRITE_SIZE;
-            const ctx = canvas.getContext('2d');
-
             const isWhite = piece <= W_KING;
-            ctx.clearRect(0, 0, SPRITE_SIZE, SPRITE_SIZE);
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-            ctx.font = '42px "Segoe UI Symbol", "Noto Sans Symbols 2", "Arial Unicode MS", serif';
-
-            ctx.lineJoin = 'round';
-            ctx.lineWidth = isWhite ? 3 : 2;
-            ctx.strokeStyle = isWhite ? '#202020' : 'rgba(255, 255, 255, 0.75)';
-            ctx.fillStyle = isWhite ? '#f6f2e8' : '#111111';
-
-            ctx.strokeText(symbols[piece], 24, 26);
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-            ctx.fillText(symbols[piece], 24, 26);
-
-            sprites[piece] = canvas.toDataURL('image/png');
+            sprites[piece] = createClassicSprite(pieceKinds[piece], isWhite);
         }
         return sprites;
     }

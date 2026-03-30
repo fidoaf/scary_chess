@@ -6,10 +6,16 @@
     const W_PAWN = 1, W_KNIGHT = 2, W_BISHOP = 3, W_ROOK = 4, W_QUEEN = 5, W_KING = 6;
     const B_PAWN = 7, B_KNIGHT = 8, B_BISHOP = 9, B_ROOK = 10, B_QUEEN = 11, B_KING = 12;
 
-    const PIECE_LABELS = {
+    const MINECRAFT_LABELS = {
         [EMPTY]: '',
         [W_PAWN]: 'Pig', [W_KNIGHT]: 'Wolf', [W_BISHOP]: 'Villager', [W_ROOK]: 'Iron Golem', [W_QUEEN]: 'Alex', [W_KING]: 'Steve',
         [B_PAWN]: 'Entity 303', [B_KNIGHT]: 'Cursed Villager', [B_BISHOP]: 'Enderman', [B_ROOK]: 'Siren Head', [B_QUEEN]: 'Herobrine', [B_KING]: 'Herobrine',
+    };
+
+    const CLASSIC_LABELS = {
+        [EMPTY]: '',
+        [W_PAWN]: 'White Pawn', [W_KNIGHT]: 'White Knight', [W_BISHOP]: 'White Bishop', [W_ROOK]: 'White Rook', [W_QUEEN]: 'White Queen', [W_KING]: 'White King',
+        [B_PAWN]: 'Black Pawn', [B_KNIGHT]: 'Black Knight', [B_BISHOP]: 'Black Bishop', [B_ROOK]: 'Black Rook', [B_QUEEN]: 'Black Queen', [B_KING]: 'Black King',
     };
 
     // ---- Minecraft Pixel Art Sprites (8x8 face textures) ----
@@ -222,7 +228,94 @@
         return sprites;
     }
 
-    const SPRITES = generateSprites();
+    function generateClassicSprites() {
+        const SPRITE_SIZE = 48;
+        const symbols = {
+            [W_PAWN]: '\u265F', [W_KNIGHT]: '\u265E', [W_BISHOP]: '\u265D', [W_ROOK]: '\u265C', [W_QUEEN]: '\u265B', [W_KING]: '\u265A',
+            [B_PAWN]: '\u265F', [B_KNIGHT]: '\u265E', [B_BISHOP]: '\u265D', [B_ROOK]: '\u265C', [B_QUEEN]: '\u265B', [B_KING]: '\u265A',
+        };
+
+        const sprites = {};
+        for (let piece = W_PAWN; piece <= B_KING; piece++) {
+            const canvas = document.createElement('canvas');
+            canvas.width = SPRITE_SIZE;
+            canvas.height = SPRITE_SIZE;
+            const ctx = canvas.getContext('2d');
+
+            const isWhite = piece <= W_KING;
+            ctx.clearRect(0, 0, SPRITE_SIZE, SPRITE_SIZE);
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.font = '42px "Segoe UI Symbol", "Noto Sans Symbols 2", "Arial Unicode MS", serif';
+
+            ctx.lineJoin = 'round';
+            ctx.lineWidth = isWhite ? 3 : 2;
+            ctx.strokeStyle = isWhite ? '#202020' : 'rgba(255, 255, 255, 0.75)';
+            ctx.fillStyle = isWhite ? '#f6f2e8' : '#111111';
+
+            ctx.strokeText(symbols[piece], 24, 26);
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(symbols[piece], 24, 26);
+
+            sprites[piece] = canvas.toDataURL('image/png');
+        }
+        return sprites;
+    }
+
+    const MINECRAFT_SPRITES = generateSprites();
+    const CLASSIC_SPRITES = generateClassicSprites();
+    const SETTINGS_STORAGE_KEY = 'scary-chess-settings';
+
+    let currentTheme = 'scary-minecraft';
+    let activeSprites = MINECRAFT_SPRITES;
+    let activeLabels = MINECRAFT_LABELS;
+
+    const THEME_BRANDING = {
+        'classic-chess': {
+            pageTitle: 'Classic Chess',
+            heading: 'Classic Chess',
+            favicon: 'favicon-classic.svg',
+        },
+        'scary-minecraft': {
+            pageTitle: 'Scary Chess',
+            heading: 'Scary Chess',
+            favicon: 'favicon.svg',
+        },
+    };
+
+    function updateThemeBranding(theme) {
+        const branding = THEME_BRANDING[theme] || THEME_BRANDING['scary-minecraft'];
+        document.title = branding.pageTitle;
+        document.body.dataset.theme = theme;
+
+        const heading = document.querySelector('.title-row h1');
+        if (heading) {
+            heading.textContent = branding.heading;
+        }
+
+        const favicon = document.querySelector('link[rel="icon"]');
+        if (favicon) {
+            favicon.href = branding.favicon;
+        }
+    }
+
+    function applyTheme(theme) {
+        currentTheme = theme;
+        if (theme === 'classic-chess') {
+            activeSprites = CLASSIC_SPRITES;
+            activeLabels = CLASSIC_LABELS;
+        } else {
+            activeSprites = MINECRAFT_SPRITES;
+            activeLabels = MINECRAFT_LABELS;
+        }
+        updateThemeBranding(theme);
+        writeStoredSettings();
+        if (board.length === 64) {
+            render();
+            updateStatus();
+        }
+    }
 
     const WHITE = 'white';
     const BLACK = 'black';
@@ -252,6 +345,54 @@
     let capturedByBlack = [];
     let gameOver = false;
     let isRemoteAction = false;
+    let reloadProtectionEnabled = true;
+
+    function readStoredSettings() {
+        try {
+            const raw = window.localStorage.getItem(SETTINGS_STORAGE_KEY);
+            if (!raw) return {};
+            const parsed = JSON.parse(raw);
+            return parsed && typeof parsed === 'object' ? parsed : {};
+        } catch {
+            return {};
+        }
+    }
+
+    function writeStoredSettings() {
+        try {
+            window.localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify({
+                theme: currentTheme,
+                reloadProtectionEnabled,
+            }));
+        } catch {
+            // Ignore storage failures so the game still works in restricted browsers.
+        }
+    }
+
+    function syncSettingsControls() {
+        const reloadToggle = document.getElementById('reload-protection-toggle');
+        if (reloadToggle) {
+            reloadToggle.checked = reloadProtectionEnabled;
+        }
+
+        document.querySelectorAll('input[name="theme"]').forEach((input) => {
+            input.checked = input.value === currentTheme;
+        });
+    }
+
+    function restoreSettings() {
+        const settings = readStoredSettings();
+
+        if (settings.theme === 'classic-chess' || settings.theme === 'scary-minecraft') {
+            currentTheme = settings.theme;
+        }
+
+        if (typeof settings.reloadProtectionEnabled === 'boolean') {
+            reloadProtectionEnabled = settings.reloadProtectionEnabled;
+        }
+
+        syncSettingsControls();
+    }
 
     // ---- Board Setup ----
     const INITIAL_BOARD = [
@@ -636,6 +777,28 @@
 
     // ---- Status ----
 
+    function renderTurnIndicator(turnEl) {
+        if (gameOver) {
+            turnEl.textContent = '';
+            return;
+        }
+
+        const side = turn === WHITE ? 'White' : 'Black';
+        const pawnPiece = turn === WHITE ? W_PAWN : B_PAWN;
+
+        turnEl.innerHTML = '';
+        const icon = document.createElement('img');
+        icon.src = activeSprites[pawnPiece];
+        icon.alt = `${side} pawn`;
+        icon.className = 'turn-pawn-icon';
+
+        const text = document.createElement('span');
+        text.textContent = `${side}'s Turn`;
+
+        turnEl.appendChild(icon);
+        turnEl.appendChild(text);
+    }
+
     function updateStatus() {
         const turnEl = document.getElementById('turn-indicator');
         const statusEl = document.getElementById('status');
@@ -665,7 +828,7 @@
             statusEl.textContent = '';
         }
 
-        turnEl.textContent = gameOver ? '' : (turn === WHITE ? "White's Turn" : "Black's Turn");
+        renderTurnIndicator(turnEl);
     }
 
     function isInsufficientMaterial() {
@@ -718,9 +881,9 @@
                 const p = board[idx(r, c)];
                 if (p !== EMPTY) {
                     const img = document.createElement('img');
-                    img.src = SPRITES[p];
-                    img.alt = PIECE_LABELS[p];
-                    img.title = PIECE_LABELS[p];
+                    img.src = activeSprites[p];
+                    img.alt = activeLabels[p];
+                    img.title = activeLabels[p];
                     img.className = 'piece-img';
                     img.draggable = false;
                     sq.appendChild(img);
@@ -769,8 +932,8 @@
             el.innerHTML = '';
             sort(pieces).forEach(p => {
                 const img = document.createElement('img');
-                img.src = SPRITES[p];
-                img.alt = PIECE_LABELS[p];
+                img.src = activeSprites[p];
+                img.alt = activeLabels[p];
                 img.className = 'captured-img';
                 el.appendChild(img);
             });
@@ -826,8 +989,8 @@
             const piece = color === WHITE ? pt : pt + 6;
             const span = document.createElement('span');
             const img = document.createElement('img');
-            img.src = SPRITES[piece];
-            img.alt = PIECE_LABELS[piece];
+            img.src = activeSprites[piece];
+            img.alt = activeLabels[piece];
             img.className = 'promo-img';
             span.appendChild(img);
             span.addEventListener('click', () => {
@@ -917,6 +1080,8 @@
             const base = window.location.href.split('?')[0];
             const shareUrl = base + '?join=' + encodeURIComponent(id);
             document.getElementById('share-link-display').textContent = shareUrl;
+            setShareFallbackTargets(shareUrl);
+            document.getElementById('share-fallback-actions').classList.add('hidden');
             document.getElementById('share-modal').classList.remove('hidden');
             setConnectionStatus('hosting');
         });
@@ -948,6 +1113,22 @@
         });
     }
 
+    function setShareFallbackTargets(url) {
+        const safeUrl = String(url || '').trim();
+        if (!safeUrl) return;
+
+        const message = `Play Scary Chess with me: ${safeUrl}`;
+        const emailLink = document.getElementById('share-email-link');
+        const whatsappLink = document.getElementById('share-whatsapp-link');
+
+        if (emailLink) {
+            emailLink.href = `mailto:?subject=${encodeURIComponent('Play Scary Chess with me')}&body=${encodeURIComponent(message)}`;
+        }
+        if (whatsappLink) {
+            whatsappLink.href = `https://wa.me/?text=${encodeURIComponent(message)}`;
+        }
+    }
+
     function setConnectionStatus(status) {
         const el = document.getElementById('connection-status');
         const labels = {
@@ -957,7 +1138,10 @@
             disconnected: 'Opponent disconnected',
             error:        'Connection error',
         };
-        el.textContent = labels[status] || '';
+        const label = labels[status] || '';
+        el.textContent = '';
+        el.title = label;
+        el.setAttribute('aria-label', label);
         el.className = 'connection-status connection-' + status;
         el.classList.remove('hidden');
     }
@@ -970,11 +1154,40 @@
         }
     }
 
+    function isReloadShortcut(e) {
+        const key = (e.key || '').toLowerCase();
+        return key === 'f5' || (key === 'r' && (e.ctrlKey || e.metaKey));
+    }
+
+    function openSettingsModal() {
+        document.getElementById('settings-modal').classList.remove('hidden');
+    }
+
+    function closeSettingsModal() {
+        document.getElementById('settings-modal').classList.add('hidden');
+    }
+
     // ---- Event Listeners ----
 
     document.getElementById('new-game-btn').addEventListener('click', initGame);
     document.getElementById('undo-btn').addEventListener('click', undoMove);
     document.getElementById('play-together-btn').addEventListener('click', hostGame);
+    document.getElementById('settings-btn').addEventListener('click', openSettingsModal);
+    document.getElementById('close-settings-btn').addEventListener('click', closeSettingsModal);
+    document.getElementById('settings-modal').addEventListener('click', function (e) {
+        if (e.target.id === 'settings-modal') closeSettingsModal();
+    });
+    document.getElementById('reload-protection-toggle').addEventListener('change', function (e) {
+        reloadProtectionEnabled = e.target.checked;
+        writeStoredSettings();
+    });
+    document.querySelectorAll('input[name="theme"]').forEach((input) => {
+        input.addEventListener('change', function (e) {
+            if (e.target.checked) {
+                applyTheme(e.target.value);
+            }
+        });
+    });
     document.getElementById('copy-link-btn').addEventListener('click', function () {
         const text = document.getElementById('share-link-display').textContent;
         navigator.clipboard.writeText(text).then(function () {
@@ -984,19 +1197,55 @@
             }, 1500);
         });
     });
+    document.getElementById('share-link-btn').addEventListener('click', async function () {
+        const url = document.getElementById('share-link-display').textContent.trim();
+        if (!url) return;
+
+        const message = `Play Scary Chess with me: ${url}`;
+        setShareFallbackTargets(url);
+
+        if (navigator.share) {
+            try {
+                await navigator.share({
+                    title: 'Scary Chess',
+                    text: message,
+                    url,
+                });
+                return;
+            } catch (err) {
+                if (err && err.name === 'AbortError') return;
+            }
+        }
+
+        document.getElementById('share-fallback-actions').classList.remove('hidden');
+    });
     document.getElementById('close-share-modal-btn').addEventListener('click', function () {
         document.getElementById('share-modal').classList.add('hidden');
     });
 
     // Keyboard support
     document.addEventListener('keydown', (e) => {
+        if (reloadProtectionEnabled && isReloadShortcut(e)) {
+            e.preventDefault();
+            return;
+        }
+
         if (e.key === 'z' && (e.ctrlKey || e.metaKey)) {
             e.preventDefault();
             undoMove();
         }
     });
 
+    // Warn before accidental refresh/navigation that would reset the current game.
+    window.addEventListener('beforeunload', (e) => {
+        if (!reloadProtectionEnabled) return;
+        e.preventDefault();
+        e.returnValue = '';
+    });
+
     // Start
+    restoreSettings();
+    applyTheme(currentTheme);
     initGame();
     initMultiplayer();
 })();

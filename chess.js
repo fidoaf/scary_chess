@@ -251,6 +251,7 @@
     let capturedByWhite = [];
     let capturedByBlack = [];
     let gameOver = false;
+    let isRemoteAction = false;
 
     // ---- Board Setup ----
     const INITIAL_BOARD = [
@@ -282,6 +283,9 @@
         gameOver = false;
         render();
         updateStatus();
+        if (!isRemoteAction && typeof TogetherJS !== 'undefined' && TogetherJS.running) {
+            TogetherJS.send({ type: 'chess-newgame' });
+        }
     }
 
     // ---- Move Generation ----
@@ -604,6 +608,9 @@
 
         render();
         updateStatus();
+        if (!isRemoteAction && typeof TogetherJS !== 'undefined' && TogetherJS.running) {
+            TogetherJS.send({ type: 'chess-move', move: move });
+        }
     }
 
     function undoMove() {
@@ -622,6 +629,9 @@
         gameOver = false;
         render();
         updateStatus();
+        if (!isRemoteAction && typeof TogetherJS !== 'undefined' && TogetherJS.running) {
+            TogetherJS.send({ type: 'chess-undo' });
+        }
     }
 
     // ---- Status ----
@@ -829,6 +839,74 @@
         });
 
         modal.classList.remove('hidden');
+    }
+
+    // ---- TogetherJS Integration ----
+
+    function broadcastState() {
+        if (typeof TogetherJS !== 'undefined' && TogetherJS.running) {
+            TogetherJS.send({
+                type: 'chess-state',
+                board: board,
+                turn: turn,
+                castlingRights: castlingRights,
+                enPassantTarget: enPassantTarget,
+                halfMoveClock: halfMoveClock,
+                lastMove: lastMove,
+                capturedByWhite: capturedByWhite,
+                capturedByBlack: capturedByBlack,
+                gameOver: gameOver,
+                moveHistory: moveHistory,
+            });
+        }
+    }
+
+    if (typeof TogetherJS !== 'undefined') {
+        TogetherJS.hub.on('chess-move', function (msg) {
+            if (!msg.sameUrl) return;
+            isRemoteAction = true;
+            executeMove(msg.move);
+            isRemoteAction = false;
+        });
+
+        TogetherJS.hub.on('chess-undo', function (msg) {
+            if (!msg.sameUrl) return;
+            isRemoteAction = true;
+            undoMove();
+            isRemoteAction = false;
+        });
+
+        TogetherJS.hub.on('chess-newgame', function (msg) {
+            if (!msg.sameUrl) return;
+            isRemoteAction = true;
+            initGame();
+            isRemoteAction = false;
+        });
+
+        TogetherJS.hub.on('chess-state', function (msg) {
+            if (!msg.sameUrl) return;
+            board = msg.board;
+            turn = msg.turn;
+            castlingRights = msg.castlingRights;
+            enPassantTarget = msg.enPassantTarget;
+            halfMoveClock = msg.halfMoveClock;
+            lastMove = msg.lastMove;
+            capturedByWhite = msg.capturedByWhite;
+            capturedByBlack = msg.capturedByBlack;
+            gameOver = msg.gameOver;
+            moveHistory = msg.moveHistory;
+            selectedSquare = null;
+            legalMovesForSelected = [];
+            render();
+            updateStatus();
+        });
+
+        // Send current game state to any new peer that joins
+        TogetherJS.hub.on('togetherjs.hello', function (msg) {
+            if (msg.sameUrl) {
+                broadcastState();
+            }
+        });
     }
 
     // ---- Event Listeners ----

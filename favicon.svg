@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32">
+  <defs>
+    <radialGradient id="bodyGrad" cx="50%" cy="40%" r="55%">
+      <stop offset="0%" stop-color="#3a0a0a"/>
+      <stop offset="100%" stop-color="#0d0000"/>
+    </radialGradient>
+    <radialGradient id="eyeGlow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#ff4400" stop-opacity="1"/>
+      <stop offset="100%" stop-color="#880000" stop-opacity="0.6"/>
+    </radialGradient>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="1.2" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <filter id="eyeGlowFilter">
+      <feGaussianBlur stdDeviation="1.5" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+
+  <!-- Base / plinth -->
+  <rect x="7" y="27" width="18" height="3" rx="1.5" fill="url(#bodyGrad)" stroke="#550000" stroke-width="0.5"/>
+  <!-- Neck / stem -->
+  <rect x="13" y="22" width="6" height="6" rx="1" fill="url(#bodyGrad)" stroke="#550000" stroke-width="0.5"/>
+  <!-- Waist -->
+  <ellipse cx="16" cy="22" rx="5" ry="2" fill="url(#bodyGrad)" stroke="#550000" stroke-width="0.5"/>
+  <!-- Body -->
+  <ellipse cx="16" cy="18" rx="4.5" ry="4" fill="url(#bodyGrad)" stroke="#550000" stroke-width="0.5"/>
+  <!-- Neck connector -->
+  <rect x="14.5" y="12" width="3" height="4" rx="1" fill="url(#bodyGrad)" stroke="#550000" stroke-width="0.5"/>
+  <!-- Head -->
+  <circle cx="16" cy="10" r="5.5" fill="url(#bodyGrad)" stroke="#550000" stroke-width="0.5" filter="url(#glow)"/>
+
+  <!-- Glowing eyes -->
+  <ellipse cx="13.8" cy="9.8" rx="1.5" ry="1.1" fill="url(#eyeGlow)" filter="url(#eyeGlowFilter)"/>
+  <ellipse cx="18.2" cy="9.8" rx="1.5" ry="1.1" fill="url(#eyeGlow)" filter="url(#eyeGlowFilter)"/>
+
+  <!-- Sinister mouth -->
+  <path d="M13 12.2 Q14.2 13.5 16 13 Q17.8 13.5 19 12.2" stroke="#ff2200" stroke-width="0.8" fill="none" stroke-linecap="round"/>
+  <line x1="14.2" y1="12.5" x2="14.2" y2="13.2" stroke="#ff2200" stroke-width="0.6"/>
+  <line x1="16" y1="12.8" x2="16" y2="13.5" stroke="#ff2200" stroke-width="0.6"/>
+  <line x1="17.8" y1="12.5" x2="17.8" y2="13.2" stroke="#ff2200" stroke-width="0.6"/>
+</svg>

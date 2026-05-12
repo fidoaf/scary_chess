@@ -449,6 +449,7 @@
     let gameOver = false;
     let isRemoteAction = false;
     let reloadProtectionEnabled = true;
+    let gameMode = null; // 'pvp' or 'cpu'
 
     function readStoredSettings() {
         try {
@@ -855,10 +856,23 @@
         if (!isRemoteAction) {
             sendToPeer({ type: 'chess-move', move: move });
         }
+        tryCpuMove();
     }
 
     function undoMove() {
         if (moveHistory.length === 0 || gameOver) return;
+        // In CPU mode, undo both the CPU's move and the player's move
+        if (gameMode === 'cpu' && moveHistory.length >= 2 && turn === WHITE) {
+            const snapshot = moveHistory.pop(); // undo CPU move
+            board = snapshot.board;
+            turn = snapshot.turn;
+            castlingRights = snapshot.castlingRights;
+            enPassantTarget = snapshot.enPassantTarget;
+            halfMoveClock = snapshot.halfMoveClock;
+            lastMove = snapshot.lastMove;
+            capturedByWhite = snapshot.capturedByWhite;
+            capturedByBlack = snapshot.capturedByBlack;
+        }
         const snapshot = moveHistory.pop();
         board = snapshot.board;
         turn = snapshot.turn;
@@ -1049,6 +1063,7 @@
 
     function onSquareClick(r, c) {
         if (gameOver) return;
+        if (gameMode === 'cpu' && turn === BLACK) return;
 
         const piece = board[idx(r, c)];
 
@@ -1270,13 +1285,117 @@
         document.getElementById('settings-modal').classList.add('hidden');
     }
 
+    // ---- Game Mode Selection ----
+
+    function showModeModal() {
+        document.getElementById('mode-modal').classList.remove('hidden');
+    }
+
+    function hideModeModal() {
+        document.getElementById('mode-modal').classList.add('hidden');
+    }
+
+    function selectMode(mode) {
+        gameMode = mode;
+        hideModeModal();
+        initGame();
+    }
+
+    // ---- CPU AI ----
+
+    const PIECE_VALUES = { 1: 100, 2: 320, 3: 330, 4: 500, 5: 900, 6: 20000 };
+
+    const PAWN_TABLE = [
+         0,  0,  0,  0,  0,  0,  0,  0,
+        50, 50, 50, 50, 50, 50, 50, 50,
+        10, 10, 20, 30, 30, 20, 10, 10,
+         5,  5, 10, 25, 25, 10,  5,  5,
+         0,  0,  0, 20, 20,  0,  0,  0,
+         5, -5,-10,  0,  0,-10, -5,  5,
+         5, 10, 10,-20,-20, 10, 10,  5,
+         0,  0,  0,  0,  0,  0,  0,  0,
+    ];
+
+    function evaluateBoard(brd) {
+        let score = 0;
+        for (let i = 0; i < 64; i++) {
+            const p = brd[i];
+            if (p === EMPTY) continue;
+            const type = pieceType(p);
+            const val = PIECE_VALUES[type] || 0;
+            if (pieceColor(p) === BLACK) {
+                score += val;
+                if (type === 1) score += PAWN_TABLE[i];
+            } else {
+                score -= val;
+                if (type === 1) score -= PAWN_TABLE[63 - i];
+            }
+        }
+        return score;
+    }
+
+    function cpuPickMove() {
+        const moves = legalMoves(BLACK);
+        if (moves.length === 0) return null;
+
+        let bestScore = -Infinity;
+        let bestMoves = [];
+
+        for (const move of moves) {
+            const { newBrd } = applyMoveOnBoard(move, board);
+            let score = evaluateBoard(newBrd);
+
+            // Look one ply deeper (white's best response)
+            const oppMoves = pseudoLegalMoves(WHITE, newBrd, null, castlingRights);
+            let bestOppScore = Infinity;
+            for (const opp of oppMoves) {
+                const { newBrd: oppBrd } = applyMoveOnBoard(opp, newBrd);
+                if (isInCheck(WHITE, oppBrd)) continue; // illegal
+                const oppScore = evaluateBoard(oppBrd);
+                if (oppScore < bestOppScore) bestOppScore = oppScore;
+            }
+            if (bestOppScore !== Infinity) score = bestOppScore;
+
+            if (score > bestScore) {
+                bestScore = score;
+                bestMoves = [move];
+            } else if (score === bestScore) {
+                bestMoves.push(move);
+            }
+        }
+
+        return bestMoves[Math.floor(Math.random() * bestMoves.length)];
+    }
+
+    function tryCpuMove() {
+        if (gameMode !== 'cpu' || turn !== BLACK || gameOver) return;
+        setTimeout(() => {
+            if (turn !== BLACK || gameOver) return;
+            const move = cpuPickMove();
+            if (move) {
+                // CPU auto-promotes to queen
+                if (move.promo) {
+                    move.promo = 5;
+                }
+                executeMove(move);
+            }
+        }, 300);
+    }
+
     // ---- Event Listeners ----
 
-    document.getElementById('new-game-btn').addEventListener('click', initGame);
+    document.getElementById('new-game-btn').addEventListener('click', function () {
+        showModeModal();
+    });
     document.getElementById('undo-btn').addEventListener('click', undoMove);
-    document.getElementById('play-together-btn').addEventListener('click', hostGame);
+    document.getElementById('play-together-btn').addEventListener('click', function () {
+        gameMode = 'pvp';
+        hostGame();
+    });
     document.getElementById('settings-btn').addEventListener('click', openSettingsModal);
     document.getElementById('close-settings-btn').addEventListener('click', closeSettingsModal);
+    document.getElementById('mode-pvp-btn').addEventListener('click', function () { selectMode('pvp'); });
+    document.getElementById('mode-cpu-btn').addEventListener('click', function () { selectMode('cpu'); });
     document.getElementById('settings-modal').addEventListener('click', function (e) {
         if (e.target.id === 'settings-modal') closeSettingsModal();
     });
@@ -1349,6 +1468,15 @@
     // Start
     restoreSettings();
     applyTheme(currentTheme);
-    initGame();
-    initMultiplayer();
+
+    // If joining a multiplayer game, skip mode selection
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('join')) {
+        gameMode = 'pvp';
+        initGame();
+        initMultiplayer();
+    } else {
+        initGame();
+        showModeModal();
+    }
 })();

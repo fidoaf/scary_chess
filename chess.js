@@ -376,178 +376,183 @@
         function create3DSprite(pieceKind, isWhite) {
             const id = (isWhite ? 'w' : 'b') + pieceKind;
 
-            // Marble white vs glossy dark
+            // High-contrast palette for convincing 3D
             const c = isWhite ? {
-                hi: '#ffffff', lit: '#f0ece0', mid: '#d8d0c0', dark: '#a8a090', shadow: '#787068',
-                stroke: '#908878', spec: '#ffffff', rim: '#e8e4d8', base: '#c8c0b0',
-                baseDk: '#989088', ring: '#b8b0a0', accent: '#a09888',
+                hi: '#ffffff', lit: '#f5f2ea', mid: '#c8c0a8', dark: '#807868',
+                shadow: '#504838', deepSh: '#302820',
+                stroke: '#706050', spec: '#ffffff',
+                rim: '#e8e0d0', base: '#b8b098', baseDk: '#787060',
+                ring: '#a8a090', accent: '#908878',
+                edgeLight: '#ffffff', edgeDark: '#605848',
             } : {
-                hi: '#606060', lit: '#404040', mid: '#2a2a2a', dark: '#151515', shadow: '#080808',
-                stroke: '#555555', spec: '#808080', rim: '#4a4a4a', base: '#303030',
-                baseDk: '#111111', ring: '#3a3a3a', accent: '#484848',
+                hi: '#707070', lit: '#505050', mid: '#2a2a2a', dark: '#0e0e0e',
+                shadow: '#000000', deepSh: '#000000',
+                stroke: '#444444', spec: '#a0a0a0',
+                rim: '#505050', base: '#2a2a2a', baseDk: '#0a0a0a',
+                ring: '#383838', accent: '#4a4a4a',
+                edgeLight: '#686868', edgeDark: '#050505',
             };
 
             const defs =
                 '<defs>' +
-                // Main body: left-lit radial gradient for cylindrical volume
-                '<radialGradient id="b_' + id + '" cx="0.35" cy="0.3" r="0.7" fx="0.3" fy="0.25">' +
+                // Body: strong left-lit radial gradient
+                '<radialGradient id="b_' + id + '" cx="0.3" cy="0.28" r="0.72" fx="0.25" fy="0.2">' +
                 '<stop offset="0%" stop-color="' + c.hi + '"/>' +
-                '<stop offset="30%" stop-color="' + c.lit + '"/>' +
-                '<stop offset="60%" stop-color="' + c.mid + '"/>' +
-                '<stop offset="100%" stop-color="' + c.dark + '"/>' +
+                '<stop offset="20%" stop-color="' + c.lit + '"/>' +
+                '<stop offset="50%" stop-color="' + c.mid + '"/>' +
+                '<stop offset="80%" stop-color="' + c.dark + '"/>' +
+                '<stop offset="100%" stop-color="' + c.shadow + '"/>' +
                 '</radialGradient>' +
-                // Side rim shading (left highlight, right shadow)
+                // Strong left-to-right side shading for cylindrical look
                 '<linearGradient id="s_' + id + '" x1="0" y1="0" x2="1" y2="0">' +
-                '<stop offset="0%" stop-color="' + c.hi + '" stop-opacity="0.35"/>' +
-                '<stop offset="25%" stop-color="' + c.hi + '" stop-opacity="0"/>' +
-                '<stop offset="70%" stop-color="' + c.shadow + '" stop-opacity="0"/>' +
-                '<stop offset="100%" stop-color="' + c.shadow + '" stop-opacity="0.55"/>' +
+                '<stop offset="0%" stop-color="' + c.edgeLight + '" stop-opacity="0.5"/>' +
+                '<stop offset="15%" stop-color="' + c.edgeLight + '" stop-opacity="0.15"/>' +
+                '<stop offset="40%" stop-color="' + c.edgeLight + '" stop-opacity="0"/>' +
+                '<stop offset="60%" stop-color="' + c.edgeDark + '" stop-opacity="0"/>' +
+                '<stop offset="85%" stop-color="' + c.edgeDark + '" stop-opacity="0.3"/>' +
+                '<stop offset="100%" stop-color="' + c.edgeDark + '" stop-opacity="0.7"/>' +
                 '</linearGradient>' +
-                // Top specular highlight
-                '<radialGradient id="sp_' + id + '" cx="0.4" cy="0.15" r="0.35">' +
-                '<stop offset="0%" stop-color="' + c.spec + '" stop-opacity="0.85"/>' +
+                // Bright specular highlight spot
+                '<radialGradient id="sp_' + id + '" cx="0.35" cy="0.12" r="0.25">' +
+                '<stop offset="0%" stop-color="' + c.spec + '" stop-opacity="0.9"/>' +
+                '<stop offset="60%" stop-color="' + c.spec + '" stop-opacity="0.15"/>' +
                 '<stop offset="100%" stop-color="' + c.spec + '" stop-opacity="0"/>' +
                 '</radialGradient>' +
-                // Base gradient
+                // Base gradient (top lit, bottom dark)
                 '<linearGradient id="ba_' + id + '" x1="0" y1="0" x2="0" y2="1">' +
                 '<stop offset="0%" stop-color="' + c.rim + '"/>' +
-                '<stop offset="40%" stop-color="' + c.base + '"/>' +
+                '<stop offset="30%" stop-color="' + c.base + '"/>' +
                 '<stop offset="100%" stop-color="' + c.baseDk + '"/>' +
                 '</linearGradient>' +
-                // Shadow filter
-                '<filter id="sh_' + id + '" x="-15%" y="-8%" width="130%" height="130%">' +
-                '<feDropShadow dx="1" dy="2" stdDeviation="1.5" flood-color="rgba(0,0,0,0.4)"/>' +
-                '</filter>' +
-                // Soft inner glow
-                '<filter id="gl_' + id + '" x="-5%" y="-5%" width="110%" height="110%">' +
-                '<feGaussianBlur in="SourceAlpha" stdDeviation="1" result="blur"/>' +
-                '<feOffset dx="0" dy="1" result="shifted"/>' +
-                '<feFlood flood-color="' + c.shadow + '" flood-opacity="0.3"/>' +
-                '<feComposite in2="shifted" operator="in"/>' +
-                '<feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge>' +
-                '</filter>' +
+                // Base side shading
+                '<linearGradient id="bas_' + id + '" x1="0" y1="0" x2="1" y2="0">' +
+                '<stop offset="0%" stop-color="' + c.edgeLight + '" stop-opacity="0.4"/>' +
+                '<stop offset="20%" stop-color="' + c.edgeLight + '" stop-opacity="0"/>' +
+                '<stop offset="80%" stop-color="' + c.edgeDark + '" stop-opacity="0"/>' +
+                '<stop offset="100%" stop-color="' + c.edgeDark + '" stop-opacity="0.5"/>' +
+                '</linearGradient>' +
                 '</defs>';
 
             const B = 'url(#b_' + id + ')';
             const S = 'url(#s_' + id + ')';
             const SP = 'url(#sp_' + id + ')';
             const BA = 'url(#ba_' + id + ')';
-            const SH = 'url(#sh_' + id + ')';
+            const BAS = 'url(#bas_' + id + ')';
 
-            // Layered shape: body fill + side shading + specular
+            // Draw a "thick" piece: dark shadow silhouette offset behind + lit front with multi-layer shading
             function body(d) {
-                return '<path d="' + d + '" fill="' + B + '" stroke="' + c.stroke + '" stroke-width="1.2" stroke-linejoin="round" filter="' + SH + '"/>' +
-                    '<path d="' + d + '" fill="' + S + '"/>' +
-                    '<path d="' + d + '" fill="' + SP + '"/>';
+                // Shadow/thickness layer: offset 2px right, 1px down, darker
+                const shadowLayer = '<path d="' + d + '" fill="' + c.deepSh + '" opacity="0.5" transform="translate(2,1)"/>';
+                // Main body with radial gradient
+                const mainBody = '<path d="' + d + '" fill="' + B + '" stroke="' + c.stroke + '" stroke-width="1.3" stroke-linejoin="round"/>';
+                // Side shading overlay
+                const sideShade = '<path d="' + d + '" fill="' + S + '"/>';
+                // Specular overlay
+                const specHighlight = '<path d="' + d + '" fill="' + SP + '"/>';
+                return shadowLayer + mainBody + sideShade + specHighlight;
             }
 
-            // Ring/collar decoration
+            // Ring/collar with thickness
             function ring(y, rx, ry) {
-                return '<ellipse cx="32" cy="' + y + '" rx="' + rx + '" ry="' + ry + '" fill="none" stroke="' + c.ring + '" stroke-width="1.2" opacity="0.7"/>';
+                return '<ellipse cx="33" cy="' + (y + 0.5) + '" rx="' + rx + '" ry="' + ry + '" fill="none" stroke="' + c.shadow + '" stroke-width="1" opacity="0.3"/>' +
+                    '<ellipse cx="32" cy="' + y + '" rx="' + rx + '" ry="' + ry + '" fill="none" stroke="' + c.ring + '" stroke-width="1.4" opacity="0.8"/>';
             }
 
-            // Base pedestal: wide bottom + mid collar
+            // Base pedestal with thickness effect
             function pedestal(topY) {
-                return '<path d="M14,' + (topY + 8) + ' Q14,' + (topY + 4) + ' 18,' + topY + ' L46,' + topY + ' Q50,' + (topY + 4) + ' 50,' + (topY + 8) + ' Z" fill="' + BA + '" stroke="' + c.stroke + '" stroke-width="1.2"/>' +
-                    '<path d="M18,' + topY + ' Q18,' + (topY - 1.5) + ' 22,' + (topY - 2.5) + ' L42,' + (topY - 2.5) + ' Q46,' + (topY - 1.5) + ' 46,' + topY + ' Z" fill="' + BA + '" stroke="' + c.stroke + '" stroke-width="1"/>' +
-                    // Top rim highlight on base
-                    '<path d="M19,' + topY + ' Q19,' + (topY - 1) + ' 23,' + (topY - 2) + ' L41,' + (topY - 2) + ' Q45,' + (topY - 1) + ' 45,' + topY + '" fill="none" stroke="' + c.hi + '" stroke-width="0.6" opacity="0.5"/>';
+                const botY = topY + 8;
+                // Shadow layer offset
+                const shadow = '<path d="M15,' + (botY + 1) + ' Q15,' + (topY + 5) + ' 19,' + (topY + 1) + ' L47,' + (topY + 1) + ' Q51,' + (topY + 5) + ' 51,' + (botY + 1) + ' Z" fill="' + c.deepSh + '" opacity="0.4"/>';
+                // Main base
+                const main = '<path d="M14,' + botY + ' Q14,' + (topY + 4) + ' 18,' + topY + ' L46,' + topY + ' Q50,' + (topY + 4) + ' 50,' + botY + ' Z" fill="' + BA + '" stroke="' + c.stroke + '" stroke-width="1.2"/>';
+                const sideShade = '<path d="M14,' + botY + ' Q14,' + (topY + 4) + ' 18,' + topY + ' L46,' + topY + ' Q50,' + (topY + 4) + ' 50,' + botY + ' Z" fill="' + BAS + '"/>';
+                // Step
+                const step = '<path d="M18,' + topY + ' Q18,' + (topY - 1.5) + ' 22,' + (topY - 2.5) + ' L42,' + (topY - 2.5) + ' Q46,' + (topY - 1.5) + ' 46,' + topY + ' Z" fill="' + BA + '" stroke="' + c.stroke + '" stroke-width="1"/>';
+                const stepShade = '<path d="M18,' + topY + ' Q18,' + (topY - 1.5) + ' 22,' + (topY - 2.5) + ' L42,' + (topY - 2.5) + ' Q46,' + (topY - 1.5) + ' 46,' + topY + ' Z" fill="' + BAS + '"/>';
+                // Rim highlight
+                const rimHi = '<path d="M19,' + topY + ' Q19,' + (topY - 1) + ' 23,' + (topY - 2) + ' L41,' + (topY - 2) + ' Q45,' + (topY - 1) + ' 45,' + topY + '" fill="none" stroke="' + c.hi + '" stroke-width="0.8" opacity="0.6"/>';
+                return shadow + main + sideShade + step + stepShade + rimHi;
             }
 
             // Ground shadow
-            const gnd = '<ellipse cx="32" cy="58" rx="18" ry="2.5" fill="rgba(0,0,0,0.25)"/>';
+            const gnd = '<ellipse cx="34" cy="59" rx="18" ry="3" fill="rgba(0,0,0,0.35)"/>';
 
             let shapes = '';
 
             if (pieceKind === 'pawn') {
-                // Compact Staunton pawn: round head, tapered neck, flared base
                 shapes = gnd + pedestal(50) +
                     body('M24,47.5 C24,43 25,40 27,38 C24,36 22.5,33 22.5,29 C22.5,23.5 27,19 32,19 C37,19 41.5,23.5 41.5,29 C41.5,33 40,36 37,38 C39,40 40,43 40,47.5 Z') +
                     ring(38, 7, 1.5) +
                     ring(47.5, 9, 1.8);
 
             } else if (pieceKind === 'rook') {
-                // Staunton rook: crenellated top, straight tower body, ringed collar
                 shapes = gnd + pedestal(50) +
-                    // Tower body
                     body('M22,47.5 L22,24 L20.5,24 L20.5,15 L25,15 L25,18 L29,18 L29,15 L35,15 L35,18 L39,18 L39,15 L43.5,15 L43.5,24 L42,24 L42,47.5 Z') +
                     ring(24, 11.5, 1.5) +
                     ring(47.5, 10.5, 1.8) +
-                    // Battlement inner shadow
-                    '<rect x="21" y="15" width="22" height="3" fill="' + c.shadow + '" opacity="0.2" rx="0.5"/>' +
-                    // Horizontal collar
-                    '<rect x="21" y="30" width="22" height="2.5" rx="1" fill="' + c.ring + '" stroke="' + c.stroke + '" stroke-width="0.6" opacity="0.5"/>';
+                    '<rect x="21" y="15" width="22" height="3" fill="' + c.shadow + '" opacity="0.25" rx="0.5"/>' +
+                    '<rect x="21" y="30" width="22" height="2.5" rx="1" fill="' + c.ring + '" stroke="' + c.stroke + '" stroke-width="0.6" opacity="0.6"/>';
 
             } else if (pieceKind === 'knight') {
-                // Staunton knight: detailed horse head profile
                 shapes = gnd + pedestal(50) +
-                    // Neck and head
                     body('M24,47.5 C24,42 25,38 26,35 C27,32 28,28 26,24 C24,20 20,18 18,14 C16,10 17,6 21,5 C23,4 25,4.5 27,5.5 L28,4 C29,3.5 31,4 31,5.5 L31,7 C33,6.5 35,7 36,8 C39,10 42,14 43,20 C44,26 44,34 43,38 C42,42 42,47.5 42,47.5 Z') +
                     ring(47.5, 10, 1.8) +
-                    // Ear
                     '<path d="M27,5.5 C28,3 30,3.5 31,5.5" fill="' + B + '" stroke="' + c.stroke + '" stroke-width="0.8"/>' +
-                    // Eye
-                    '<circle cx="24" cy="14" r="1.8" fill="' + c.shadow + '"/>' +
-                    '<circle cx="23.6" cy="13.6" r="0.6" fill="' + c.spec + '" opacity="0.9"/>' +
-                    // Nostril
-                    '<circle cx="19" cy="18" r="0.8" fill="' + c.shadow + '" opacity="0.6"/>' +
-                    // Mouth line
+                    '<circle cx="24" cy="14" r="2" fill="' + c.shadow + '"/>' +
+                    '<circle cx="23.4" cy="13.4" r="0.7" fill="' + c.spec + '" opacity="0.9"/>' +
+                    '<circle cx="19" cy="18" r="0.9" fill="' + c.shadow + '" opacity="0.6"/>' +
                     '<path d="M18,16 C19,17 20,17 21,16.5" fill="none" stroke="' + c.shadow + '" stroke-width="0.8" opacity="0.5"/>' +
-                    // Mane ridges
-                    '<path d="M32,8 C35,9 38,13 40,18" fill="none" stroke="' + c.accent + '" stroke-width="1" opacity="0.4"/>' +
-                    '<path d="M30,9 C33,10 36,14 38,20" fill="none" stroke="' + c.accent + '" stroke-width="0.7" opacity="0.3"/>';
+                    '<path d="M32,8 C35,9 38,13 40,18" fill="none" stroke="' + c.accent + '" stroke-width="1.2" opacity="0.5"/>' +
+                    '<path d="M30,9 C33,10 36,14 38,20" fill="none" stroke="' + c.accent + '" stroke-width="0.8" opacity="0.3"/>';
 
             } else if (pieceKind === 'bishop') {
-                // Staunton bishop: tall mitre with slit, ball on top
                 shapes = gnd + pedestal(50) +
-                    // Mitre body
                     body('M24,47.5 C24,43 25,40 27,38 C23,34 21,28 22,22 C23,16 27,11 32,9 C37,11 41,16 42,22 C43,28 41,34 37,38 C39,40 40,43 40,47.5 Z') +
                     ring(38, 7.5, 1.5) +
                     ring(47.5, 9, 1.8) +
-                    // Diagonal slit
-                    '<line x1="29" y1="16" x2="36" y2="30" stroke="' + c.shadow + '" stroke-width="1.8" stroke-linecap="round" opacity="0.5"/>' +
-                    '<line x1="29.5" y1="16.5" x2="36.5" y2="30.5" stroke="' + c.hi + '" stroke-width="0.5" stroke-linecap="round" opacity="0.3"/>' +
-                    // Ball on top
+                    '<line x1="29" y1="16" x2="36" y2="30" stroke="' + c.shadow + '" stroke-width="2" stroke-linecap="round" opacity="0.5"/>' +
+                    '<line x1="29.8" y1="16.8" x2="36.8" y2="30.8" stroke="' + c.hi + '" stroke-width="0.6" stroke-linecap="round" opacity="0.3"/>' +
+                    // Ball with thickness shadow
+                    '<circle cx="33" cy="8.5" r="3" fill="' + c.deepSh + '" opacity="0.4"/>' +
                     '<circle cx="32" cy="8" r="3" fill="' + B + '" stroke="' + c.stroke + '" stroke-width="1"/>' +
-                    '<circle cx="31.2" cy="7" r="1" fill="' + c.spec + '" opacity="0.7"/>';
+                    '<circle cx="31" cy="7" r="1.2" fill="' + c.spec + '" opacity="0.8"/>';
 
             } else if (pieceKind === 'queen') {
-                // Staunton queen: coronet with arches and ball on top
                 shapes = gnd + pedestal(51) +
-                    // Main body
                     body('M22,48.5 C22,43 24,39 26,36 C23,33 21,28 22,22 C23,17 26,13 30,12 L28,9 C26,6 27,4 29,5 L31,7 L32,5 L33,7 L35,5 C37,4 38,6 36,9 L34,12 C38,13 41,17 42,22 C43,28 41,33 38,36 C40,39 42,43 42,48.5 Z') +
                     ring(36, 7.5, 1.5) +
                     ring(48.5, 10.5, 1.8) +
-                    // Crown spikes highlight
+                    // Crown balls with shadow
+                    '<circle cx="30" cy="5" r="1.5" fill="' + c.deepSh + '" opacity="0.35" transform="translate(1,0.5)"/>' +
                     '<circle cx="29" cy="4.5" r="1.5" fill="' + B + '" stroke="' + c.stroke + '" stroke-width="0.7"/>' +
+                    '<circle cx="33" cy="4" r="1.5" fill="' + c.deepSh + '" opacity="0.35" transform="translate(1,0.5)"/>' +
                     '<circle cx="32" cy="3.5" r="1.5" fill="' + B + '" stroke="' + c.stroke + '" stroke-width="0.7"/>' +
+                    '<circle cx="36" cy="5" r="1.5" fill="' + c.deepSh + '" opacity="0.35" transform="translate(1,0.5)"/>' +
                     '<circle cx="35" cy="4.5" r="1.5" fill="' + B + '" stroke="' + c.stroke + '" stroke-width="0.7"/>' +
-                    // Spec dots on crown
-                    '<circle cx="28.6" cy="4" r="0.5" fill="' + c.spec + '" opacity="0.6"/>' +
-                    '<circle cx="31.6" cy="3" r="0.5" fill="' + c.spec + '" opacity="0.6"/>' +
-                    // Ball on very top
+                    '<circle cx="28.5" cy="3.8" r="0.5" fill="' + c.spec + '" opacity="0.7"/>' +
+                    '<circle cx="31.5" cy="2.8" r="0.5" fill="' + c.spec + '" opacity="0.7"/>' +
+                    // Top ball
+                    '<circle cx="33" cy="2.5" r="2" fill="' + c.deepSh + '" opacity="0.35"/>' +
                     '<circle cx="32" cy="2" r="2" fill="' + B + '" stroke="' + c.stroke + '" stroke-width="0.8"/>' +
-                    '<circle cx="31.4" cy="1.3" r="0.7" fill="' + c.spec + '" opacity="0.7"/>' +
-                    // Collar decoration
-                    '<rect x="24" y="35" width="16" height="2" rx="1" fill="' + c.ring + '" stroke="' + c.stroke + '" stroke-width="0.5" opacity="0.5"/>';
+                    '<circle cx="31.3" cy="1.2" r="0.7" fill="' + c.spec + '" opacity="0.8"/>' +
+                    '<rect x="24" y="35" width="16" height="2" rx="1" fill="' + c.ring + '" stroke="' + c.stroke + '" stroke-width="0.5" opacity="0.6"/>';
 
             } else if (pieceKind === 'king') {
-                // Staunton king: tallest piece, cross on top, arched body
                 shapes = gnd + pedestal(52) +
-                    // Main body
                     body('M22,49.5 C22,44 23,40 25,37 C22,33 20,28 21,22 C22,16 26,12 32,10 C38,12 42,16 43,22 C44,28 42,33 39,37 C41,40 42,44 42,49.5 Z') +
                     ring(37, 8, 1.5) +
                     ring(49.5, 10.5, 1.8) +
-                    // Collar band
-                    '<rect x="23.5" y="36" width="17" height="2.5" rx="1" fill="' + c.ring + '" stroke="' + c.stroke + '" stroke-width="0.5" opacity="0.5"/>' +
-                    // Arch detail
-                    '<path d="M28,22 Q32,18 36,22" fill="none" stroke="' + c.accent + '" stroke-width="1" opacity="0.4"/>' +
-                    // Cross - vertical bar
+                    '<rect x="23.5" y="36" width="17" height="2.5" rx="1" fill="' + c.ring + '" stroke="' + c.stroke + '" stroke-width="0.5" opacity="0.6"/>' +
+                    '<path d="M28,22 Q32,18 36,22" fill="none" stroke="' + c.accent + '" stroke-width="1" opacity="0.5"/>' +
+                    // Cross shadow
+                    '<rect x="31" y="3" width="4" height="10" rx="1" fill="' + c.deepSh + '" opacity="0.4"/>' +
+                    '<rect x="28" y="5.5" width="10" height="3.5" rx="1" fill="' + c.deepSh + '" opacity="0.4"/>' +
+                    // Cross vertical
                     '<rect x="30" y="2" width="4" height="10" rx="1" fill="' + B + '" stroke="' + c.stroke + '" stroke-width="1"/>' +
-                    '<rect x="30.5" y="2.5" width="1.5" height="9" rx="0.5" fill="' + c.hi + '" opacity="0.35"/>' +
-                    // Cross - horizontal bar
+                    '<rect x="30.5" y="2.5" width="1.5" height="9" rx="0.5" fill="' + c.hi + '" opacity="0.4"/>' +
+                    // Cross horizontal
                     '<rect x="27" y="4.5" width="10" height="3.5" rx="1" fill="' + B + '" stroke="' + c.stroke + '" stroke-width="1"/>' +
-                    '<rect x="27.5" y="5" width="9" height="1.2" rx="0.5" fill="' + c.hi + '" opacity="0.35"/>';
+                    '<rect x="27.5" y="5" width="9" height="1.2" rx="0.5" fill="' + c.hi + '" opacity="0.4"/>';
             }
 
             const svg =
@@ -621,6 +626,26 @@
             activeLabels = MINECRAFT_LABELS;
         }
         updateThemeBranding(theme);
+
+        // Toggle between DOM board and Three.js canvas
+        const container3d = document.getElementById('board-3d-container');
+        const wrapper = document.querySelector('.board-wrapper');
+        if (theme === '3d') {
+            if (wrapper) wrapper.classList.add('hidden');
+            if (container3d) {
+                container3d.classList.remove('hidden');
+                if (!ChessRenderer3D.isActive()) {
+                    ChessRenderer3D.init(container3d, onSquareClick);
+                }
+            }
+        } else {
+            if (ChessRenderer3D.isActive()) {
+                ChessRenderer3D.destroy();
+            }
+            if (container3d) container3d.classList.add('hidden');
+            if (wrapper) wrapper.classList.remove('hidden');
+        }
+
         writeStoredSettings();
         if (board.length === 64) {
             render();
@@ -1190,6 +1215,20 @@
     // ---- Rendering ----
 
     function render() {
+        // 3D mode: update Three.js renderer
+        if (currentTheme === '3d' && ChessRenderer3D.isActive()) {
+            const inCheck = isInCheck(turn, board);
+            const kingPos = inCheck ? findKing(turn, board) : null;
+            ChessRenderer3D.updateBoard(board, {
+                selected: selectedSquare,
+                lastMove: lastMove,
+                checkPos: kingPos,
+                legalMoves: legalMovesForSelected,
+            });
+            renderCaptured();
+            return;
+        }
+
         const boardEl = document.getElementById('board');
         boardEl.innerHTML = '';
 

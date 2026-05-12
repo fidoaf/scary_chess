@@ -27,11 +27,14 @@
   </defs>
 
   <!-- Dark background -->
-  <rect width="32" height="32" rx="4" fill="#1b1b2f"/>
+  <rect width="32" height="32" rx="4" fill="#302e2b"/>
 
   <!-- Board hint: two squares -->
-  <rect x="4" y="22" width="12" height="8" fill="#7a6840" rx="1"/>
-  <rect x="16" y="22" width="12" height="8" fill="#c8b88a" rx="1"/>
+  <rect x="4" y="22" width="12" height="8" fill="#769656" rx="1"/>
+  <rect x="16" y="22" width="12" height="8" fill="#eeeed2" rx="1"/>
+
+  <!-- Board edge -->
+  <rect x="4" y="28" width="24" height="3" fill="#6b5436" rx="1"/>
 
   <!-- Ground shadow -->
   <ellipse cx="16" cy="26" rx="8" ry="1.5" fill="rgba(0,0,0,0.3)"/>
